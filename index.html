@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🚦 عبور الطريق – لاعبين أونلاين</title>
+
+    <!-- الخطوط والأنماط -->
+    <style>
+        @import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            font-family: "Press Start 2P", cursive;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        canvas.game {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #2d4059;
+        }
+
+        /* أزرار التحكم (للشاشات اللمسية) */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #controls>div {
+            pointer-events: auto;
+            display: grid;
+            grid-template-columns: 55px 55px 55px;
+            gap: 8px;
+        }
+
+        #controls button {
+            width: 100%;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 4px 0 #555;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: 0.05s linear;
+        }
+
+        #controls button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        #controls button:first-of-type {
+            grid-column: 1 / -1;
+        }
+
+        /* لوحة المعلومات */
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.8em;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #result-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        #result-container #result {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        #result-container h1 {
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+
+        #result-container button {
+            background: #d32f2f;
+            border: none;
+            padding: 15px 40px;
+            font-family: inherit;
+            font-size: 1.2rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        #result-container button:hover {
+            transform: scale(1.05);
+            background: #b71c1c;
+        }
+
+        /* لوحة الاتصال (أعلى اليمين) */
+        #connection-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 18px 22px;
+            border-radius: 16px;
+            color: white;
+            font-size: 13px;
+            z-index: 30;
+            min-width: 210px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        #connection-panel input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            width: 100%;
+            background: #2d4059;
+            color: white;
+        }
+
+        #connection-panel input::placeholder {
+            color: #aaa;
+        }
+
+        #connection-panel .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        #connection-panel button {
+            background: #0f3460;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        #connection-panel button:hover:not(:disabled) {
+            background: #1a4f8b;
+            transform: scale(1.02);
+        }
+
+        #connection-panel button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #connection-panel .status {
+            font-size: 12px;
+            color: #a8d8ea;
+            min-height: 20px;
+            word-break: break-all;
+        }
+
+        #role-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        #role-badge.harer {
+            background: #ff9800;
+            color: #000;
+        }
+
+        #role-badge.police {
+            background: #2196f3;
+            color: #fff;
+        }
+
+        #role-badge.waiting {
+            background: #777;
+            color: #fff;
+        }
+
+        @media (max-width: 700px) {
+            #connection-panel {
+                top: 10px;
+                right: 10px;
+                padding: 12px 14px;
+                min-width: 160px;
+                font-size: 11px;
+            }
+            #connection-panel button {
+                font-size: 11px;
+                padding: 6px 10px;
+            }
+            #score {
+                font-size: 1.2em;
+                top: 12px;
+                left: 12px;
+            }
+            #controls button {
+                height: 44px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas اللعبة -->
+    <canvas class="game" id="gameCanvas"></canvas>
+
+    <!-- لوحة النقاط -->
+    <div id="score">0</div>
+
+    <!-- أزرار التحكم -->
+    <div id="controls">
+        <div>
+            <button id="forward">▲</button>
+            <button id="left">◀</button>
+            <button id="backward">▼</button>
+            <button id="right">▶</button>
+        </div>
+    </div>
+
+    <!-- نافذة انتهاء اللعبة -->
+    <div id="result-container">
+        <div id="result">
+            <h1>💥 Game Over</h1>
+            <p>Your score: <span id="final-score"></span></p>
+            <button id="retry">🔄 Retry</button>
+        </div>
+    </div>
+
+    <!-- لوحة الاتصال (إنشاء غرفة / انضمام) -->
+    <div id="connection-panel">
+        <button id="createRoomBtn">🚀 إنشاء غرفة</button>
+        <div class="btn-row">
+            <input type="text" id="roomInput" placeholder="معرف الغرفة" />
+            <button id="joinRoomBtn">انضم</button>
+        </div>
+        <div class="status" id="statusMsg">⏳ جاهز...</div>
+        <div id="roleDisplay"><span id="role-badge" class="waiting">⏳ انتظر</span></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- المكتبات الخارجية -->
+    <!-- PeerJS لتسهيل الاتصال -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js">
+    </script>
+
+    <!-- Three.js عبر import map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.163.0"
+            }
+        }
+    </script>
+
+    <!-- ============================================================ -->
+    <!-- الكود الرئيسي للعبة (Module) -->
+    <script type="module">
+        // ------------------------------------------------------------
+        // 1. الاستيرادات
+        // ------------------------------------------------------------
+        import * as THREE from "three";
+
+        // ------------------------------------------------------------
+        // 2. الثوابت والدوال المساعدة (من الكود الأصلي)
+        // ------------------------------------------------------------
+        const minTileIndex = -8;
+        const maxTileIndex = 8;
+        const tilesPerRow = maxTileIndex - minTileIndex + 1;
+        const tileSize = 42;
+
+        function randomElement(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // ------------------------------------------------------------
+        // 3. دوال الرسم والكائنات (نسخة معدلة من اللعبة الأصلية)
+        // ------------------------------------------------------------
+
+        // كاميرا
+        function Camera() {
+            const size = 300;
+            const viewRatio = window.innerWidth / window.innerHeight;
+            const width = viewRatio < 1 ? size : size * viewRatio;
+            const height = viewRatio < 1 ? size / viewRatio : size;
+            const camera = new THREE.OrthographicCamera(
+                width / -2, width / 2,
+                height / 2, height / -2,
+                100, 900
+            );
+            camera.up.set(0, 0, 1);
+            camera.position.set(300, -300, 300);
+            camera.lookAt(0, 0, 0);
+            return camera;
+        }
+
+        // نسيج
+        function Texture(width, height, rects) {
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext("2d");
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, width, height);
+            context.fillStyle = "rgba(0,0,0,0.6)";
+            rects.forEach((rect) => {
+                context.fillRect(rect.x, rect.y, rect.w, rect.h);
+            });
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const carFrontTexture = new Texture(40, 80, [{ x: 0, y: 10, w: 30, h: 60 }]);
+        const carBackTexture = new Texture(40, 80, [{ x: 10, y: 10, w: 30, h: 60 }]);
+        const carRightSideTexture = new Texture(110, 40, [
+            { x: 10, y: 0, w: 50, h: 30 },
+            { x: 70, y: 0, w: 30, h: 30 },
+        ]);
+        const carLeftSideTexture = new Texture(110, 40, [
+            { x: 10, y: 10, w: 50, h: 30 },
+            { x: 70, y: 10, w: 30, h: 30 },
+        ]);
+        const truckFrontTexture = new Texture(30, 30, [{ x: 5, y: 0, w: 10, h: 30 }]);
+        const truckRightSideTexture = new Texture(25, 30, [{ x: 15, y: 5, w: 10, h: 10 }]);
+        const truckLeftSideTexture = new Texture(25, 30, [{ x: 15, y: 15, w: 10, h: 10 }]);
+
+        // عجلة
+        function Wheel(x) {
+            const wheel = new THREE.Mesh(
+                new THREE.BoxGeometry(12, 33, 12),
+                new THREE.MeshLambertMaterial({ color: 0x333333, flatShading: true })
+            );
+            wheel.position.x = x;
+            wheel.position.z = 6;
+            return wheel;
+        }
+
+        // سيارة
+        function Car(initialTileIndex, direction, color) {
+            const car = new THREE.Group();
+            car.position.x = initialTileIndex * tileSize;
+            if (!direction) car.rotation.z = Math.PI;
+
+            const main = new THREE.Mesh(
+                new THREE.BoxGeometry(60, 30, 15),
+                new THREE.MeshLambertMaterial({ color, flatShading: true })
+            );
+            main.position.z = 12;
+            main.castShadow = true;
+            main.receiveShadow = true;
+            car.add(main);
+
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(33, 24, 12), [
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true, map: carBackTexture }),
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true, map: carFrontTexture }),
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true, map: carRightSideTexture }),
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true, map: carLeftSideTexture }),
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true }),
+                new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true }),
+            ]);
+            cabin.position.x = -6;
+            cabin.position.z = 25.5;
+            cabin.castShadow = true;
+            cabin.receiveShadow = true;
+            car.add(cabin);
+
+            car.add(Wheel(18));
+            car.add(Wheel(-18));
+            return car;
+        }
+
+        // شاحنة
+        function Truck(initialTileIndex, direction, color) {
+            const truck = new THREE.Group();
+            truck.position.x = initialTileIndex * tileSize;
+            if (!direction) truck.rotation.z = Math.PI;
+
+            const cargo = new THREE.Mesh(
+                new THREE.BoxGeometry(70, 35, 35),
+                new THREE.MeshLambertMaterial({ color: 0xb4c6fc, flatShading: true })
+            );
+            cargo.position.x = -15;
+            cargo.position.z = 25;
+            cargo.castShadow = true;
+            cargo.receiveShadow = true;
+            truck.add(cargo);
+
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 30), [
+                new THREE.MeshLambertMaterial({ color, flatShading: true, map: truckFrontTexture }),
+                new THREE.MeshLambertMaterial({ color, flatShading: true }),
+                new THREE.MeshLambertMaterial({ color, flatShading: true, map: truckLeftSideTexture }),
+                new THREE.MeshLambertMaterial({ color, flatShading: true, map: truckRightSideTexture }),
+                new THREE.MeshPhongMaterial({ color, flatShading: true }),
+                new THREE.MeshPhongMaterial({ color, flatShading: true }),
+            ]);
+            cabin.position.x = 35;
+            cabin.position.z = 20;
+            cabin.castShadow = true;
+            cabin.receiveShadow = true;
+            truck.add(cabin);
+
+            truck.add(Wheel(37));
+            truck.add(Wheel(5));
+            truck.add(Wheel(-35));
+            return truck;
+        }
+
+        // شجرة
+        function Tree(tileIndex, height) {
+            const tree = new THREE.Group();
+            tree.position.x = tileIndex * tileSize;
+            const trunk = new THREE.Mesh(
+                new THREE.BoxGeometry(15, 15, 20),
+                new THREE.MeshLambertMaterial({ color: 0x4d2926, flatShading: true })
+            );
+            trunk.position.z = 10;
+            tree.add(trunk);
+            const crown = new THREE.Mesh(
+                new THREE.BoxGeometry(30, 30, height),
+                new THREE.MeshLambertMaterial({ color: 0x7aa21d, flatShading: true })
+            );
+            crown.position.z = height / 2 + 20;
+            crown.castShadow = true;
+            crown.receiveShadow = true;
+            tree.add(crown);
+            return tree;
+        }
+
+        // عشب
+        function Grass(rowIndex) {
+            const grass = new THREE.Group();
+            grass.position.y = rowIndex * tileSize;
+            const createSection = (color) =>
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(tilesPerRow * tileSize, tileSize, 3),
+                    new THREE.MeshLambertMaterial({ color })
+                );
+            const middle = createSection(0xbaf455);
+            middle.receiveShadow = true;
+            grass.add(middle);
+            const left = createSection(0x99c846);
+            left.position.x = -tilesPerRow * tileSize;
+            grass.add(left);
+            const right = createSection(0x99c846);
+            right.position.x = tilesPerRow * tileSize;
+            grass.add(right);
+            return grass;
+        }
+
+        // طريق
+        function Road(rowIndex) {
+            const road = new THREE.Group();
+            road.position.y = rowIndex * tileSize;
+            const createSection = (color) =>
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(tilesPerRow * tileSize, tileSize),
+                    new THREE.MeshLambertMaterial({ color })
+                );
+            const middle = createSection(0x454a59);
+            middle.receiveShadow = true;
+            road.add(middle);
+            const left = createSection(0x393d49);
+            left.position.x = -tilesPerRow * tileSize;
+            road.add(left);
+            const right = createSection(0x393d49);
+            right.position.x = tilesPerRow * tileSize;
+            road.add(right);
+            return road;
+        }
+
+        // إضاءة
+        function DirectionalLight() {
+            const dirLight = new THREE.DirectionalLight();
+            dirLight.position.set(-100, -100, 200);
+            dirLight.up.set(0, 0, 1);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.up.set(0, 0, 1);
+            dirLight.shadow.camera.left = -400;
+            dirLight.shadow.camera.right = 400;
+            dirLight.shadow.camera.top = 400;
+            dirLight.shadow.camera.bottom = -400;
+            dirLight.shadow.camera.near = 50;
+            dirLight.shadow.camera.far = 400;
+            return dirLight;
+        }
+
+        // ============================================================
+        // 4. توليد بيانات الخريطة
+        // ============================================================
+        function generateForesMetadata() {
+            const occupiedTiles = new Set();
+            const trees = Array.from({ length: 4 }, () => {
+                let tileIndex;
+                do {
+                    tileIndex = THREE.MathUtils.randInt(minTileIndex, maxTileIndex);
+                } while (occupiedTiles.has(tileIndex));
+                occupiedTiles.add(tileIndex);
+                const height = randomElement([20, 45, 60]);
+                return { tileIndex, height };
+            });
+            return { type: "forest", trees };
+        }
+
+        function generateCarLaneMetadata() {
+            const direction = randomElement([true, false]);
+            const speed = randomElement([125, 156, 188]);
+            const occupiedTiles = new Set();
+            const vehicles = Array.from({ length: 3 }, () => {
+                let initialTileIndex;
+                do {
+                    initialTileIndex = THREE.MathUtils.randInt(minTileIndex, maxTileIndex);
+                } while (occupiedTiles.has(initialTileIndex));
+                occupiedTiles.add(initialTileIndex - 1);
+                occupiedTiles.add(initialTileIndex);
+                occupiedTiles.add(initialTileIndex + 1);
+                const color = randomElement([0xa52523, 0xbdb638, 0x78b14b]);
+                return { initialTileIndex, color };
+            });
+            return { type: "car", direction, speed, vehicles };
+        }
+
+        function generateTruckLaneMetadata() {
+            const direction = randomElement([true, false]);
+            const speed = randomElement([125, 156, 188]);
+            const occupiedTiles = new Set();
+            const vehicles = Array.from({ length: 2 }, () => {
+                let initialTileIndex;
+                do {
+                    initialTileIndex = THREE.MathUtils.randInt(minTileIndex, maxTileIndex);
+                } while (occupiedTiles.has(initialTileIndex));
+                occupiedTiles.add(initialTileIndex - 2);
+                occupiedTiles.add(initialTileIndex - 1);
+                occupiedTiles.add(initialTileIndex);
+                occupiedTiles.add(initialTileIndex + 1);
+                occupiedTiles.add(initialTileIndex + 2);
+                const color = randomElement([0xa52523, 0xbdb638, 0x78b14b]);
+                return { initialTileIndex, color };
+            });
+            return { type: "truck", direction, speed, vehicles };
+        }
+
+        function generateRow() {
+            const type = randomElement(["car", "truck", "forest"]);
+            if (type === "car") return generateCarLaneMetadata();
+            if (type === "truck") return generateTruckLaneMetadata();
+            return generateForesMetadata();
+        }
+
+        function generateRows(amount) {
+            const rows = [];
+            for (let i = 0; i < amount; i++) {
+                rows.push(generateRow());
+            }
+            return rows;
+        }
+
+        // ============================================================
+        // 5. إعداد اللاعب (شخصية الضفدع)
+        // ============================================================
+        function createPlayerMesh(color = 0xffffff, label = "أنت") {
+            const group = new THREE.Group();
+
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(15, 15, 20),
+                new THREE.MeshLambertMaterial({ color, flatShading: true })
+            );
+            body.position.z = 10;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+
+            const cap = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 4, 2),
+                new THREE.MeshLambertMaterial({ color: 0xf0619a, flatShading: true })
+            );
+            cap.position.z = 21;
+            cap.castShadow = true;
+            cap.receiveShadow = true;
+            group.add(cap);
+
+            const container = new THREE.Group();
+            container.add(group);
+            return container;
+        }
+
+        // ============================================================
+        // 6. حالة اللعبة الأساسية
+        // ============================================================
+        const metadata = [];
+        const scene = new THREE.Scene();
+
+        // اللاعب المحلي
+        const player = createPlayerMesh(0x4db8ff, "أنت");
+        const playerPos = { row: 0, tile: 0 };
+        const moveQueue = [];
+
+        // اللاعب البعيد (سيتم إضافته عند الاتصال)
+        let remotePlayer = null;
+        let remotePos = { row: 0, tile: 0, rot: 0 };
+
+        // عناصر الخريطة
+        const mapGroup = new THREE.Group();
+        scene.add(mapGroup);
+
+        // مؤقتات
+        const clock = new THREE.Clock();
+        const moveClock = new THREE.Clock(false);
+
+        // ============================================================
+        // 7. دوال الخريطة واللاعب
+        // ============================================================
+        function initializeMap() {
+            metadata.length = 0;
+            while (mapGroup.children.length > 0) {
+                mapGroup.remove(mapGroup.children[0]);
+            }
+            for (let rowIndex = 0; rowIndex > -10; rowIndex--) {
+                const grass = Grass(rowIndex);
+                mapGroup.add(grass);
+            }
+            addRows();
+        }
+
+        function addRows() {
+            const newMetadata = generateRows(20);
+            const startIndex = metadata.length;
+            metadata.push(...newMetadata);
+
+            newMetadata.forEach((rowData, index) => {
+                const rowIndex = startIndex + index + 1;
+                if (rowData.type === "forest") {
+                    const row = Grass(rowIndex);
+                    rowData.trees.forEach(({ tileIndex, height }) => {
+                        const tree = Tree(tileIndex, height);
+                        row.add(tree);
+                    });
+                    mapGroup.add(row);
+                }
+                if (rowData.type === "car" || rowData.type === "truck") {
+                    const row = Road(rowIndex);
+                    rowData.vehicles.forEach((vehicle) => {
+                        const veh = rowData.type === "car" ?
+                            Car(vehicle.initialTileIndex, rowData.direction, vehicle.color) :
+                            Truck(vehicle.initialTileIndex, rowData.direction, vehicle.color);
+                        vehicle.ref = veh;
+                        row.add(veh);
+                    });
+                    mapGroup.add(row);
+                }
+            });
+        }
+
+        function initializePlayer() {
+            player.position.set(0, 0, 0);
+            player.children[0].position.z = 0;
+            playerPos.row = 0;
+            playerPos.tile = 0;
+            moveQueue.length = 0;
+            moveClock.stop();
+            // إعادة تعيين اللاعب البعيد إذا كان موجوداً
+            if (remotePlayer) {
+                remotePlayer.position.set(0, 0, 0);
+                remotePlayer.children[0].position.z = 0;
+                remotePlayer.children[0].rotation.z = 0;
+            }
+        }
+
+        function queueMove(direction) {
+            // التحقق من صحة الحركة (نفس منطق اللعبة الأصلية)
+            const finalPos = calculateFinalPosition({ rowIndex: playerPos.row, tileIndex: playerPos.tile }, [...moveQueue,
+                direction
+            ]);
+            if (finalPos.rowIndex === -1 ||
+                finalPos.tileIndex === minTileIndex - 1 ||
+                finalPos.tileIndex === maxTileIndex + 1
+            ) return;
+
+            const row = metadata[finalPos.rowIndex - 1];
+            if (row && row.type === "forest" &&
+                row.trees.some(t => t.tileIndex === finalPos.tileIndex)
+            ) return;
+
+            moveQueue.push(direction);
+        }
+
+        function calculateFinalPosition(current, moves) {
+            let { rowIndex, tileIndex } = current;
+            moves.forEach(dir => {
+                if (dir === "forward") rowIndex += 1;
+                if (dir === "backward") rowIndex -= 1;
+                if (dir === "left") tileIndex -= 1;
+                if (dir === "right") tileIndex += 1;
+            });
+            return { rowIndex, tileIndex };
+        }
+
+        function stepCompleted() {
+            const dir = moveQueue.shift();
+            if (dir === "forward") playerPos.row += 1;
+            if (dir === "backward") playerPos.row -= 1;
+            if (dir === "left") playerPos.tile -= 1;
+            if (dir === "right") playerPos.tile += 1;
+
+            if (playerPos.row > metadata.length - 10) addRows();
+
+            document.getElementById('score').innerText = playerPos.row.toString();
+
+            // إرسال بيانات الحركة للاعب البعيد
+            if (conn && conn.open) {
+                conn.send({
+                    type: 'move',
+                    row: playerPos.row,
+                    tile: playerPos.tile,
+                    rot: player.children[0].rotation.z
+                });
+            }
+        }
+
+        function animatePlayer() {
+            if (!moveQueue.length) return;
+            if (!moveClock.running) moveClock.start();
+
+            const stepTime = 0.2;
+            const progress = Math.min(1, moveClock.getElapsedTime() / stepTime);
+
+            const startX = playerPos.tile * tileSize;
+            const startY = playerPos.row * tileSize;
+            let endX = startX,
+                endY = startY;
+            let endRot = 0;
+
+            if (moveQueue[0] === "left") { endX -= tileSize;
+                endRot = Math.PI / 2; }
+            if (moveQueue[0] === "right") { endX += tileSize;
+                endRot = -Math.PI / 2; }
+            if (moveQueue[0] === "forward") { endY += tileSize;
+                endRot = 0; }
+            if (moveQueue[0] === "backward") { endY -= tileSize;
+                endRot = Math.PI; }
+
+            player.position.x = THREE.MathUtils.lerp(startX, endX, progress);
+            player.position.y = THREE.MathUtils.lerp(startY, endY, progress);
+            player.children[0].position.z = Math.sin(progress * Math.PI) * 8;
+            player.children[0].rotation.z = THREE.MathUtils.lerp(
+                player.children[0].rotation.z, endRot, progress
+            );
+
+            if (progress >= 1) {
+                stepCompleted();
+                moveClock.stop();
+            }
+        }
+
+        // ============================================================
+        // 8. المركبات والتصادم
+        // ============================================================
+        function animateVehicles() {
+            const delta = clock.getDelta();
+            metadata.forEach(rowData => {
+                if (rowData.type === "car" || rowData.type === "truck") {
+                    const beginning = (minTileIndex - 2) * tileSize;
+                    const end = (maxTileIndex + 2) * tileSize;
+                    rowData.vehicles.forEach(({ ref }) => {
+                        if (!ref) return;
+                        if (rowData.direction) {
+                            ref.position.x = ref.position.x > end ? beginning : ref.position.x + rowData
+                            .speed * delta;
+                        } else {
+                            ref.position.x = ref.position.x < beginning ? end : ref.position.x - rowData
+                            .speed * delta;
+                        }
+                    });
+                }
+            });
+        }
+
+        function hitTest() {
+            const row = metadata[playerPos.row - 1];
+            if (!row) return;
+            if (row.type === "car" || row.type === "truck") {
+                const playerBox = new THREE.Box3().setFromObject(player);
+                row.vehicles.forEach(({ ref }) => {
+                    if (!ref) return;
+                    const vehBox = new THREE.Box3().setFromObject(ref);
+                    if (playerBox.intersectsBox(vehBox)) {
+                        gameOver();
+                    }
+                });
+            }
+        }
+
+        // ============================================================
+        // 9. إنهاء اللعبة وإعادة التشغيل
+        // ============================================================
+        let gameActive = true;
+        const resultContainer = document.getElementById('result-container');
+        const finalScoreSpan = document.getElementById('final-score');
+
+        function gameOver() {
+            if (!gameActive) return;
+            gameActive = false;
+            finalScoreSpan.innerText = playerPos.row.toString();
+            resultContainer.style.visibility = 'visible';
+            if (conn && conn.open) {
+                conn.send({ type: 'gameover', score: playerPos.row });
+            }
+        }
+
+        function restartGame() {
+            gameActive = true;
+            resultContainer.style.visibility = 'hidden';
+            initializePlayer();
+            // لا نعيد تهيئة الخريطة بالكامل، فقط نعيد تعيين اللاعب
+            // لكن في اللعبة الأصلية، إعادة التعيين الكامل أفضل
+            // سنعيد تعيين الخريطة بالكامل للحفاظ على التزامن
+            initializeMap();
+            initializePlayer();
+            if (remotePlayer) {
+                remotePlayer.position.set(0, 0, 0);
+                remotePlayer.children[0].rotation.z = 0;
+            }
+            // إعلام الطرف الآخر بإعادة التشغيل
+            if (conn && conn.open) {
+                conn.send({ type: 'restart' });
+            }
+        }
+
+        // ============================================================
+        // 10. إعداد المشهد والرندر
+        // ============================================================
+        const canvas = document.getElementById('gameCanvas');
+        const renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            alpha: false,
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+
+        // كاميرا
+        const camera = Camera();
+        player.add(camera);
+
+        // إضاءة
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+        const dirLight = DirectionalLight();
+        dirLight.target = player;
+        player.add(dirLight);
+
+        // إضافة اللاعب للمشهد
+        scene.add(player);
+        player.position.set(0, 0, 0);
+
+        // تهيئة الخريطة
+        initializeMap();
+        initializePlayer();
+
+        // ============================================================
+        // 11. الاتصال عبر PeerJS
+        // ============================================================
+        const statusMsg = document.getElementById('statusMsg');
+        const roleBadge = document.getElementById('role-badge');
+
+        let peer = null;
+        let conn = null;
+        let isHost = false;
+        let remoteReady = false;
+
+        function updateStatus(msg) {
+            statusMsg.textContent = msg;
+        }
+
+        function setRole(text, cls) {
+            roleBadge.textContent = text;
+            roleBadge.className = cls;
+        }
+
+        // إنشاء اللاعب البعيد عند الاتصال
+        function createRemotePlayer() {
+            if (remotePlayer) {
+                scene.remove(remotePlayer);
+            }
+            remotePlayer = createPlayerMesh(0xff4444, "الخصم");
+            // نجعله يظهر في نفس موقع البداية
+            remotePlayer.position.set(0, 0, 0);
+            scene.add(remotePlayer);
+        }
+
+        function setupConnection(connection) {
+            conn = connection;
+            conn.on('open', () => {
+                updateStatus('✅ متصل باللاعب الآخر!');
+                if (isHost) {
+                    setRole('🚗 هارب', 'harer');
+                    // إرسال تأكيد البداية للضيف
+                    conn.send({ type: 'init', role: 'police', host: true });
+                } else {
+                    setRole('🚔 شرطي', 'police');
+                }
+                // إنشاء اللاعب البعيد
+                createRemotePlayer();
+                // إرسال الموقع الحالي للاعب المحلي
+                if (conn.open) {
+                    conn.send({
+                        type: 'move',
+                        row: playerPos.row,
+                        tile: playerPos.tile,
+                        rot: player.children[0].rotation.z
+                    });
+                }
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'move') {
+                    if (remotePlayer) {
+                        // تحديث موقع اللاعب البعيد
+                        remotePos.row = data.row;
+                        remotePos.tile = data.tile;
+                        remotePos.rot = data.rot || 0;
+                        // تطبيق الحركة على الـ remote player (بدون تأثيرات القفز)
+                        remotePlayer.position.x = data.tile * tileSize;
+                        remotePlayer.position.y = data.row * tileSize;
+                        remotePlayer.children[0].rotation.z = data.rot || 0;
+                    }
+                } else if (data.type === 'init') {
+                    // استقبال دور اللاعب (للمضيف فقط)
+                    if (!isHost) {
+                        // الضيف يستقبل أن المضيف هو هارب
+                        setRole('🚔 شرطي', 'police');
+                        // إنشاء اللاعب البعيد (الهارب)
+                        createRemotePlayer();
+                    }
+                } else if (data.type === 'gameover') {
+                    // الطرف الآخر انتهت لعبته
+                    if (gameActive) {
+                        gameActive = false;
+                        finalScoreSpan.innerText = playerPos.row.toString();
+                        resultContainer.style.visibility = 'visible';
+                    }
+                } else if (data.type === 'restart') {
+                    // الطرف الآخر أعاد التشغيل
+                    if (!gameActive) {
+                        restartGame();
+                    }
+                }
+            });
+
+            conn.on('close', () => {
+                updateStatus('⚠️ انقطع الاتصال.');
+                setRole('⏳ قطع الاتصال', 'waiting');
+                if (remotePlayer) {
+                    scene.remove(remotePlayer);
+                    remotePlayer = null;
+                }
+            });
+        }
+
+        // إنشاء غرفة
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            if (peer) {
+                peer.destroy();
+                peer = null;
+                conn = null;
+            }
+            const roomId = 'room-' + Math.random().toString(36).substr(2, 6);
+            isHost = true;
+            peer = new Peer(roomId, { debug: 2 });
+            document.getElementById('roomInput').value = roomId;
+
+            peer.on('open', (id) => {
+                updateStatus(`✅ الغرفة جاهزة: ${id}`);
+                setRole('⏳ انتظر الخصم...', 'waiting');
+                document.getElementById('createRoomBtn').disabled = true;
+                document.getElementById('joinRoomBtn').disabled = true;
+            });
+
+            peer.on('connection', (conn) => {
+                updateStatus('🔗 لاعب آخر انضم!');
+                setRole('🚗 هارب', 'harer');
+                setupConnection(conn);
+                // نرسل للمضيف دور الهارب
+                // إنشاء اللاعب البعيد للضيف
+                createRemotePlayer();
+            });
+
+            peer.on('error', (err) => {
+                updateStatus('❌ خطأ: ' + err.message);
+                console.error(err);
+            });
+        });
+
+        // الانضمام إلى غرفة
+        document.getElementById('joinRoomBtn').addEventListener('click', () => {
+            const roomId = document.getElementById('roomInput').value.trim();
+            if (!roomId) {
+                updateStatus('⚠️ أدخل معرف الغرفة');
+                return;
+            }
+            if (peer) {
+                peer.destroy();
+                peer = null;
+                conn = null;
+            }
+            isHost = false;
+            peer = new Peer({ debug: 2 });
+
+            peer.on('open', (id) => {
+                updateStatus(`🔗 جارِ الاتصال بـ ${roomId}...`);
+                const connection = peer.connect(roomId);
+                setupConnection(connection);
+                document.getElementById('createRoomBtn').disabled = true;
+                document.getElementById('joinRoomBtn').disabled = true;
+                // سيتم تعيين الدور عند استقبال البيانات
+                setRole('⏳ جارِ التحميل...', 'waiting');
+            });
+
+            peer.on('error', (err) => {
+                updateStatus('❌ خطأ: ' + err.message);
+                console.error(err);
+            });
+        });
+
+        // ============================================================
+        // 12. التحكم (أزرار + لوحة مفاتيح)
+        // ============================================================
+        function setupControls() {
+            // أزرار الشاشة
+            document.getElementById('forward').addEventListener('click', () => queueMove('forward'));
+            document.getElementById('backward').addEventListener('click', () => queueMove('backward'));
+            document.getElementById('left').addEventListener('click', () => queueMove('left'));
+            document.getElementById('right').addEventListener('click', () => queueMove('right'));
+
+            // لوحة المفاتيح
+            window.addEventListener('keydown', (e) => {
+                const key = e.key;
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+                    e.preventDefault();
+                }
+                if (key === 'ArrowUp') queueMove('forward');
+                if (key === 'ArrowDown') queueMove('backward');
+                if (key === 'ArrowLeft') queueMove('left');
+                if (key === 'ArrowRight') queueMove('right');
+            });
+
+            // زر إعادة المحاولة
+            document.getElementById('retry').addEventListener('click', restartGame);
+        }
+
+        setupControls();
+
+        // ============================================================
+        // 13. ضبط الحجم عند تغيير النافذة
+        // ============================================================
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            renderer.setSize(w, h);
+            const viewRatio = w / h;
+            const size = 300;
+            const width = viewRatio < 1 ? size : size * viewRatio;
+            const height = viewRatio < 1 ? size / viewRatio : size;
+            camera.left = -width / 2;
+            camera.right = width / 2;
+            camera.top = height / 2;
+            camera.bottom = -height / 2;
+            camera.updateProjectionMatrix();
+        });
+
+        // ============================================================
+        // 14. حلقة اللعبة الرئيسية
+        // ============================================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameActive) {
+                animateVehicles();
+                animatePlayer();
+                hitTest();
+            }
+
+            // تحديث اللاعب البعيد إذا كان موجوداً (لضمان السلاسة)
+            if (remotePlayer) {
+                // نطبق حركة سلسة على اللاعب البعيد (اختياري)
+                // لكننا نعتمد على البيانات المستقبلة مباشرة
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ============================================================
+        // 15. رسالة ترحيب
+        // ============================================================
+        updateStatus('🚀 أنشئ غرفة أو انضم إلى واحدة');
+        setRole('⏳ انتظر', 'waiting');
+        console.log('🎮 اللعبة جاهزة للاعبين أونلاين!');
+
+        // تصدير بعض المتغيرات للتصحيح (اختياري)
+        window.__game = { player, playerPos, remotePlayer, conn, peer };
+    </script>
+</body>
+</html>
