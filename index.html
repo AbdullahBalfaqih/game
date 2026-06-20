@@ -3,17 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🏁 سباق الوصول أولاً – أونلاين + صوت</title>
+    <title>🏁 سباق الوصول إلى خط النهاية – أونلاين + صوت</title>
 
     <style>
         @import url("https://fonts.googleapis.com/css?family=Press+Start+2P");
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #1a1a2e;
             font-family: "Press Start 2P", cursive;
@@ -22,283 +16,143 @@
             width: 100vw;
             user-select: none;
         }
+        canvas.game { display: block; width: 100vw; height: 100vh; background: #2d4059; }
 
-        canvas.game {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            background: #2d4059;
-        }
-
-        /* أزرار التحكم */
         #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            pointer-events: none;
-            z-index: 10;
+            position: absolute; bottom: 20px; left: 0; width: 100%;
+            display: flex; justify-content: center; pointer-events: none; z-index: 10;
         }
-
         #controls>div {
             pointer-events: auto;
             display: grid;
             grid-template-columns: 55px 55px 55px;
             gap: 8px;
         }
-
         #controls button {
-            width: 100%;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid #555;
-            border-radius: 10px;
+            width: 100%; height: 50px;
+            background: rgba(255,255,255,0.9);
+            border: 2px solid #555; border-radius: 10px;
             box-shadow: 0 4px 0 #555;
-            font-size: 22px;
-            font-weight: bold;
-            cursor: pointer;
-            touch-action: manipulation;
+            font-size: 22px; font-weight: bold;
+            cursor: pointer; touch-action: manipulation;
             transition: 0.05s linear;
         }
+        #controls button:active { transform: translateY(4px); box-shadow: none; }
+        #controls button:first-of-type { grid-column: 1 / -1; }
 
-        #controls button:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
-        #controls button:first-of-type {
-            grid-column: 1 / -1;
-        }
-
-        /* النقاط */
         #score {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 1.8em;
-            color: #fff;
-            text-shadow: 2px 2px 0 #000;
-            z-index: 10;
+            position: absolute; top: 20px; left: 20px;
+            font-size: 1.8em; color: #fff;
+            text-shadow: 2px 2px 0 #000; z-index: 10;
             pointer-events: none;
         }
-        #targetScore {
-            position: absolute;
-            top: 20px;
-            left: 50%;
+        #finishLineIndicator {
+            position: absolute; top: 20px; left: 50%;
             transform: translateX(-50%);
-            font-size: 1.2em;
-            color: #ffd700;
+            font-size: 1.2em; color: #ffd700;
             text-shadow: 2px 2px 0 #000;
             z-index: 10;
             pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 6px 16px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 20px;
             border-radius: 30px;
+            border: 2px solid #ffd700;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+            100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
         }
 
-        /* شاشة النهاية (فوز / خسارة) */
         #result-container {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            visibility: hidden;
-            z-index: 50;
-            background: rgba(0, 0, 0, 0.7);
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            visibility: hidden; z-index: 50;
+            background: rgba(0,0,0,0.7);
             backdrop-filter: blur(6px);
         }
-
         #result-container #result {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: white;
-            padding: 30px 50px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            text-align: center;
-            max-width: 90%;
+            display: flex; flex-direction: column;
+            align-items: center; background: white;
+            padding: 30px 50px; border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            text-align: center; max-width: 90%;
         }
-
-        #result-container h1 {
-            margin-bottom: 10px;
-        }
-        #result-container .winner-msg {
-            color: #2e7d32;
-        }
-        #result-container .loser-msg {
-            color: #c62828;
-        }
+        #result-container h1 { margin-bottom: 10px; }
+        #result-container .winner-msg { color: #2e7d32; }
+        #result-container .loser-msg { color: #c62828; }
         #result-container button {
-            background: #0f3460;
-            border: none;
-            padding: 15px 40px;
-            font-family: inherit;
-            font-size: 1.2rem;
-            color: white;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-top: 10px;
+            background: #0f3460; border: none;
+            padding: 15px 40px; font-family: inherit;
+            font-size: 1.2rem; color: white;
+            border-radius: 50px; cursor: pointer;
+            transition: 0.2s; margin-top: 10px;
         }
-        #result-container button:hover {
-            transform: scale(1.05);
-            background: #1a4f8b;
-        }
+        #result-container button:hover { transform: scale(1.05); background: #1a4f8b; }
 
-        /* لوحة الاتصال */
         #connection-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px);
-            padding: 18px 22px;
-            border-radius: 16px;
-            color: white;
-            font-size: 13px;
-            z-index: 30;
-            min-width: 210px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            padding: 18px 22px; border-radius: 16px;
+            color: white; font-size: 13px; z-index: 30;
+            min-width: 210px; display: flex; flex-direction: column;
+            gap: 10px; border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             font-family: "Segoe UI", Arial, sans-serif;
             transition: 0.3s;
         }
-        #connection-panel.hidden {
-            display: none;
-        }
-
+        #connection-panel.hidden { display: none; }
         #connection-panel .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
         }
         #connection-panel .panel-header button {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0 6px;
-            opacity: 0.7;
+            background: none; border: none; color: #fff;
+            font-size: 20px; cursor: pointer; padding: 0 6px; opacity: 0.7;
         }
-        #connection-panel .panel-header button:hover {
-            opacity: 1;
-        }
-
+        #connection-panel .panel-header button:hover { opacity: 1; }
         #connection-panel input {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-            font-size: 14px;
-            width: 100%;
-            background: #2d4059;
-            color: white;
+            padding: 8px 12px; border-radius: 8px; border: none;
+            outline: none; font-size: 14px; width: 100%;
+            background: #2d4059; color: white;
         }
-        #connection-panel input::placeholder {
-            color: #aaa;
-        }
-        #connection-panel .btn-row {
-            display: flex;
-            gap: 8px;
-        }
+        #connection-panel .btn-row { display: flex; gap: 8px; }
         #connection-panel button {
-            background: #0f3460;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 30px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            flex: 1;
-            font-size: 13px;
+            background: #0f3460; border: none;
+            padding: 10px 16px; border-radius: 30px;
+            color: white; font-weight: bold; cursor: pointer;
+            transition: 0.2s; flex: 1; font-size: 13px;
             white-space: nowrap;
         }
-        #connection-panel button:hover:not(:disabled) {
-            background: #1a4f8b;
-            transform: scale(1.02);
+        #connection-panel button:hover:not(:disabled) { background: #1a4f8b; transform: scale(1.02); }
+        #connection-panel button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        #connection-panel .status { font-size: 12px; color: #a8d8ea; min-height: 20px; word-break: break-all; }
+        #connection-panel .mic-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        #connection-panel .mic-row button { flex: 2; background: #2e7d32; }
+        #connection-panel .mic-row button.muted { background: #c62828; }
+        .mic-indicator {
+            display: inline-block; width: 10px; height: 10px;
+            border-radius: 50%; background: #4caf50;
+            margin-left: 6px; transition: 0.3s;
         }
-        #connection-panel button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-        }
-        #connection-panel .status {
-            font-size: 12px;
-            color: #a8d8ea;
-            min-height: 20px;
-            word-break: break-all;
-        }
+        .mic-indicator.off { background: #888; }
 
-        /* زر إظهار اللوحة (عند إخفائها) */
         #showPanelBtn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 35;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid #555;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 14px;
-            display: none;
+            position: absolute; top: 20px; right: 20px;
+            z-index: 35; background: rgba(0,0,0,0.7);
+            border: 1px solid #555; color: white;
+            padding: 8px 14px; border-radius: 30px;
+            cursor: pointer; font-size: 14px; display: none;
             font-family: "Segoe UI", Arial, sans-serif;
         }
-        #showPanelBtn:hover {
-            background: #1a4f8b;
-        }
-
-        /* أزرار الصوت */
-        #micBtn {
-            background: #2e7d32 !important;
-        }
-        #micBtn.muted {
-            background: #c62828 !important;
-        }
-        .mic-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4caf50;
-            margin-left: 6px;
-            transition: 0.3s;
-        }
-        .mic-indicator.off {
-            background: #888;
-        }
+        #showPanelBtn:hover { background: #1a4f8b; }
 
         @media (max-width: 700px) {
-            #connection-panel {
-                top: 10px;
-                right: 10px;
-                padding: 12px 14px;
-                min-width: 160px;
-                font-size: 11px;
-            }
-            #score {
-                font-size: 1.2em;
-                top: 12px;
-                left: 12px;
-            }
-            #targetScore {
-                font-size: 0.9em;
-                top: 12px;
-                padding: 4px 12px;
-            }
-            #controls button {
-                height: 44px;
-                font-size: 18px;
-            }
+            #connection-panel { top: 10px; right: 10px; padding: 12px 14px; min-width: 160px; font-size: 11px; }
+            #score { font-size: 1.2em; top: 12px; left: 12px; }
+            #finishLineIndicator { font-size: 0.9em; top: 12px; padding: 4px 12px; }
+            #controls button { height: 44px; font-size: 18px; }
         }
     </style>
 </head>
@@ -307,7 +161,7 @@
     <canvas class="game" id="gameCanvas"></canvas>
 
     <div id="score">0</div>
-    <div id="targetScore">🏁 الهدف: 50 خطوة</div>
+    <div id="finishLineIndicator">🏁 خط النهاية (60)</div>
 
     <div id="controls">
         <div>
@@ -326,7 +180,6 @@
         </div>
     </div>
 
-    <!-- لوحة الاتصال -->
     <div id="connection-panel">
         <div class="panel-header">
             <span>🔗 الاتصال</span>
@@ -338,24 +191,18 @@
             <button id="joinRoomBtn">انضم</button>
         </div>
         <div class="status" id="statusMsg">⏳ جاهز...</div>
-        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <button id="micToggleBtn" style="flex:2; background:#2e7d32;">🎤 تفعيل الميكروفون</button>
+        <div class="mic-row">
+            <button id="micToggleBtn">🎤 تفعيل الميكروفون</button>
             <span class="mic-indicator" id="micIndicator"></span>
         </div>
-        <div id="roleDisplay"><span id="role-badge" class="waiting" style="display:inline-block;padding:4px 14px;border-radius:30px;background:#777;color:#fff;">⏳ انتظر</span></div>
+        <div id="roleDisplay"><span id="role-badge" style="display:inline-block;padding:4px 14px;border-radius:30px;background:#777;color:#fff;">⏳ انتظر</span></div>
     </div>
 
     <button id="showPanelBtn">🔗 إظهار لوحة الاتصال</button>
 
-    <!-- المكتبات -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js">
-    </script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://esm.sh/three@0.163.0"
-            }
-        }
+        { "imports": { "three": "https://esm.sh/three@0.163.0" } }
     </script>
 
     <script type="module">
@@ -365,20 +212,67 @@
         import * as THREE from "three";
 
         // ============================================================
-        // 2. الثوابت والدوال المساعدة (من اللعبة الأصلية)
+        // 2. الثوابت
         // ============================================================
         const minTileIndex = -8;
         const maxTileIndex = 8;
         const tilesPerRow = maxTileIndex - minTileIndex + 1;
         const tileSize = 42;
-        const WINNING_SCORE = 50; // الهدف للفوز
+        const FINISH_LINE_ROW = 60; // خط النهاية عند الصف 60
 
-        function randomElement(array) {
-            return array[Math.floor(Math.random() * array.length)];
-        }
+        function randomElement(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
         // ============================================================
-        // 3. دوال الرسم والكائنات (مختصرة ولكن كاملة)
+        // 3. إدارة الصوت (Web Audio API)
+        // ============================================================
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (_) { this.enabled = false; }
+            }
+
+            playTone(freq, duration, type = 'sine', volume = 0.15) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.value = volume;
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (_) {}
+            }
+
+            stepSound() {
+                this.playTone(600 + Math.random() * 200, 0.06, 'sine', 0.1);
+            }
+            winSound() {
+                [523, 659, 784, 1047].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.2, 'sine', 0.15), i * 120);
+                });
+            }
+            loseSound() {
+                [400, 350, 300, 250].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 0.25, 'sawtooth', 0.1), i * 150);
+                });
+            }
+            crashSound() {
+                this.playTone(120, 0.3, 'sawtooth', 0.12);
+                this.playTone(80, 0.4, 'square', 0.08);
+            }
+        }
+
+        const sounds = new SoundManager();
+
+        // ============================================================
+        // 4. دوال الرسم والكائنات (مع دعم خط النهاية)
         // ============================================================
         function Camera() {
             const size = 300;
@@ -398,15 +292,12 @@
 
         function Texture(width, height, rects) {
             const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = width; canvas.height = height;
             const context = canvas.getContext("2d");
             context.fillStyle = "#ffffff";
             context.fillRect(0, 0, width, height);
             context.fillStyle = "rgba(0,0,0,0.6)";
-            rects.forEach((rect) => {
-                context.fillRect(rect.x, rect.y, rect.w, rect.h);
-            });
+            rects.forEach((rect) => context.fillRect(rect.x, rect.y, rect.w, rect.h));
             return new THREE.CanvasTexture(canvas);
         }
 
@@ -425,13 +316,11 @@
         const truckLeftSideTexture = new Texture(25, 30, [{ x: 15, y: 15, w: 10, h: 10 }]);
 
         function Wheel(x) {
-            const wheel = new THREE.Mesh(
+            const w = new THREE.Mesh(
                 new THREE.BoxGeometry(12, 33, 12),
                 new THREE.MeshLambertMaterial({ color: 0x333333, flatShading: true })
             );
-            wheel.position.x = x;
-            wheel.position.z = 6;
-            return wheel;
+            w.position.x = x; w.position.z = 6; return w;
         }
 
         function Car(initialTileIndex, direction, color) {
@@ -442,9 +331,7 @@
                 new THREE.BoxGeometry(60, 30, 15),
                 new THREE.MeshLambertMaterial({ color, flatShading: true })
             );
-            main.position.z = 12;
-            main.castShadow = true;
-            main.receiveShadow = true;
+            main.position.z = 12; main.castShadow = true; main.receiveShadow = true;
             car.add(main);
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(33, 24, 12), [
                 new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true, map: carBackTexture }),
@@ -454,13 +341,10 @@
                 new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true }),
                 new THREE.MeshPhongMaterial({ color: 0xcccccc, flatShading: true }),
             ]);
-            cabin.position.x = -6;
-            cabin.position.z = 25.5;
-            cabin.castShadow = true;
-            cabin.receiveShadow = true;
+            cabin.position.x = -6; cabin.position.z = 25.5;
+            cabin.castShadow = true; cabin.receiveShadow = true;
             car.add(cabin);
-            car.add(Wheel(18));
-            car.add(Wheel(-18));
+            car.add(Wheel(18)); car.add(Wheel(-18));
             return car;
         }
 
@@ -472,10 +356,8 @@
                 new THREE.BoxGeometry(70, 35, 35),
                 new THREE.MeshLambertMaterial({ color: 0xb4c6fc, flatShading: true })
             );
-            cargo.position.x = -15;
-            cargo.position.z = 25;
-            cargo.castShadow = true;
-            cargo.receiveShadow = true;
+            cargo.position.x = -15; cargo.position.z = 25;
+            cargo.castShadow = true; cargo.receiveShadow = true;
             truck.add(cargo);
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 30), [
                 new THREE.MeshLambertMaterial({ color, flatShading: true, map: truckFrontTexture }),
@@ -485,14 +367,10 @@
                 new THREE.MeshPhongMaterial({ color, flatShading: true }),
                 new THREE.MeshPhongMaterial({ color, flatShading: true }),
             ]);
-            cabin.position.x = 35;
-            cabin.position.z = 20;
-            cabin.castShadow = true;
-            cabin.receiveShadow = true;
+            cabin.position.x = 35; cabin.position.z = 20;
+            cabin.castShadow = true; cabin.receiveShadow = true;
             truck.add(cabin);
-            truck.add(Wheel(37));
-            truck.add(Wheel(5));
-            truck.add(Wheel(-35));
+            truck.add(Wheel(37)); truck.add(Wheel(5)); truck.add(Wheel(-35));
             return truck;
         }
 
@@ -503,56 +381,95 @@
                 new THREE.BoxGeometry(15, 15, 20),
                 new THREE.MeshLambertMaterial({ color: 0x4d2926, flatShading: true })
             );
-            trunk.position.z = 10;
-            tree.add(trunk);
+            trunk.position.z = 10; tree.add(trunk);
             const crown = new THREE.Mesh(
                 new THREE.BoxGeometry(30, 30, height),
                 new THREE.MeshLambertMaterial({ color: 0x7aa21d, flatShading: true })
             );
             crown.position.z = height / 2 + 20;
-            crown.castShadow = true;
-            crown.receiveShadow = true;
+            crown.castShadow = true; crown.receiveShadow = true;
             tree.add(crown);
             return tree;
+        }
+
+        function FinishFlag(tileIndex, rowIndex) {
+            const group = new THREE.Group();
+            group.position.set(tileIndex * tileSize, rowIndex * tileSize, 0);
+            const pole = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 2, 50),
+                new THREE.MeshLambertMaterial({ color: 0xcccccc, flatShading: true })
+            );
+            pole.position.z = 25;
+            group.add(pole);
+            const flagShape = new THREE.Shape();
+            flagShape.moveTo(0, 0);
+            flagShape.lineTo(20, 10);
+            flagShape.lineTo(0, 20);
+            flagShape.closePath();
+            const flagGeom = new THREE.ShapeGeometry(flagShape);
+            const flagMat = new THREE.MeshLambertMaterial({ color: 0xffd700, side: THREE.DoubleSide, flatShading: true });
+            const flag = new THREE.Mesh(flagGeom, flagMat);
+            flag.position.set(2, -5, 45);
+            flag.rotation.x = -Math.PI / 2;
+            group.add(flag);
+            return group;
         }
 
         function Grass(rowIndex) {
             const grass = new THREE.Group();
             grass.position.y = rowIndex * tileSize;
+            const isFinish = rowIndex === FINISH_LINE_ROW;
+            const middleColor = isFinish ? 0xffd700 : 0xbaf455;
+            const sideColor = isFinish ? 0xdaa520 : 0x99c846;
             const createSection = (color) =>
                 new THREE.Mesh(
                     new THREE.BoxGeometry(tilesPerRow * tileSize, tileSize, 3),
                     new THREE.MeshLambertMaterial({ color })
                 );
-            const middle = createSection(0xbaf455);
+            const middle = createSection(middleColor);
             middle.receiveShadow = true;
             grass.add(middle);
-            const left = createSection(0x99c846);
+            const left = createSection(sideColor);
             left.position.x = -tilesPerRow * tileSize;
             grass.add(left);
-            const right = createSection(0x99c846);
+            const right = createSection(sideColor);
             right.position.x = tilesPerRow * tileSize;
             grass.add(right);
+            if (isFinish) {
+                for (let i = minTileIndex + 1; i < maxTileIndex; i += 2) {
+                    const flag = FinishFlag(i, rowIndex);
+                    grass.add(flag);
+                }
+            }
             return grass;
         }
 
         function Road(rowIndex) {
             const road = new THREE.Group();
             road.position.y = rowIndex * tileSize;
+            const isFinish = rowIndex === FINISH_LINE_ROW;
+            const midColor = isFinish ? 0xffd700 : 0x454a59;
+            const sideColor = isFinish ? 0xdaa520 : 0x393d49;
             const createSection = (color) =>
                 new THREE.Mesh(
                     new THREE.PlaneGeometry(tilesPerRow * tileSize, tileSize),
                     new THREE.MeshLambertMaterial({ color })
                 );
-            const middle = createSection(0x454a59);
+            const middle = createSection(midColor);
             middle.receiveShadow = true;
             road.add(middle);
-            const left = createSection(0x393d49);
+            const left = createSection(sideColor);
             left.position.x = -tilesPerRow * tileSize;
             road.add(left);
-            const right = createSection(0x393d49);
+            const right = createSection(sideColor);
             right.position.x = tilesPerRow * tileSize;
             road.add(right);
+            if (isFinish) {
+                for (let i = minTileIndex + 1; i < maxTileIndex; i += 2) {
+                    const flag = FinishFlag(i, rowIndex);
+                    road.add(flag);
+                }
+            }
             return road;
         }
 
@@ -574,9 +491,10 @@
         }
 
         // ============================================================
-        // 4. توليد الخريطة
+        // 5. توليد الخريطة (مع تجاهل خط النهاية في العوائق)
         // ============================================================
-        function generateForesMetadata() {
+        function generateForesMetadata(rowIndex) {
+            if (rowIndex === FINISH_LINE_ROW) return null;
             const occupiedTiles = new Set();
             const trees = Array.from({ length: 4 }, () => {
                 let tileIndex;
@@ -590,7 +508,8 @@
             return { type: "forest", trees };
         }
 
-        function generateCarLaneMetadata() {
+        function generateCarLaneMetadata(rowIndex) {
+            if (rowIndex === FINISH_LINE_ROW) return null;
             const direction = randomElement([true, false]);
             const speed = randomElement([125, 156, 188]);
             const occupiedTiles = new Set();
@@ -608,7 +527,8 @@
             return { type: "car", direction, speed, vehicles };
         }
 
-        function generateTruckLaneMetadata() {
+        function generateTruckLaneMetadata(rowIndex) {
+            if (rowIndex === FINISH_LINE_ROW) return null;
             const direction = randomElement([true, false]);
             const speed = randomElement([125, 156, 188]);
             const occupiedTiles = new Set();
@@ -628,41 +548,32 @@
             return { type: "truck", direction, speed, vehicles };
         }
 
-        function generateRow() {
-            const type = randomElement(["car", "truck", "forest"]);
-            if (type === "car") return generateCarLaneMetadata();
-            if (type === "truck") return generateTruckLaneMetadata();
-            return generateForesMetadata();
-        }
-
-        function generateRows(amount) {
-            const rows = [];
-            for (let i = 0; i < amount; i++) {
-                rows.push(generateRow());
+        function generateRow(rowIndex) {
+            if (rowIndex === FINISH_LINE_ROW) {
+                return { type: "finish", isFinish: true };
             }
-            return rows;
+            const type = randomElement(["car", "truck", "forest"]);
+            if (type === "car") return generateCarLaneMetadata(rowIndex);
+            if (type === "truck") return generateTruckLaneMetadata(rowIndex);
+            return generateForesMetadata(rowIndex);
         }
 
         // ============================================================
-        // 5. اللاعب (شخصية)
+        // 6. اللاعب
         // ============================================================
-        function createPlayerMesh(color = 0x4db8ff, label = "أنت") {
+        function createPlayerMesh(color = 0x4db8ff) {
             const group = new THREE.Group();
             const body = new THREE.Mesh(
                 new THREE.BoxGeometry(15, 15, 20),
                 new THREE.MeshLambertMaterial({ color, flatShading: true })
             );
-            body.position.z = 10;
-            body.castShadow = true;
-            body.receiveShadow = true;
+            body.position.z = 10; body.castShadow = true; body.receiveShadow = true;
             group.add(body);
             const cap = new THREE.Mesh(
                 new THREE.BoxGeometry(2, 4, 2),
                 new THREE.MeshLambertMaterial({ color: 0xf0619a, flatShading: true })
             );
-            cap.position.z = 21;
-            cap.castShadow = true;
-            cap.receiveShadow = true;
+            cap.position.z = 21; cap.castShadow = true; cap.receiveShadow = true;
             group.add(cap);
             const container = new THREE.Group();
             container.add(group);
@@ -670,12 +581,13 @@
         }
 
         // ============================================================
-        // 6. حالة اللعبة
+        // 7. حالة اللعبة (استخدام كائن metadata)
         // ============================================================
-        const metadata = [];
+        // تخزين بيانات الصفوف في كائن: المفتاح = رقم الصف، القيمة = بيانات الصف
+        const metadata = {};
         const scene = new THREE.Scene();
 
-        const player = createPlayerMesh(0x4db8ff, "أنت");
+        const player = createPlayerMesh(0x4db8ff);
         const playerPos = { row: 0, tile: 0 };
         const moveQueue = [];
 
@@ -692,46 +604,80 @@
         let gameEnded = false;
 
         // ============================================================
-        // 7. دوال الخريطة واللاعب
+        // 8. دوال الخريطة (معدلة للاستخدام مع الكائن)
         // ============================================================
         function initializeMap() {
-            metadata.length = 0;
+            // تفريغ الخريطة
             while (mapGroup.children.length > 0) {
                 mapGroup.remove(mapGroup.children[0]);
             }
+            // تفريغ metadata
+            for (let key in metadata) delete metadata[key];
+
+            // نضيف صفوفاً ابتداءً من 0 إلى -9 (صفوف سالبة)
             for (let rowIndex = 0; rowIndex > -10; rowIndex--) {
-                const grass = Grass(rowIndex);
-                mapGroup.add(grass);
+                const rowData = generateRow(rowIndex);
+                if (rowData) {
+                    metadata[rowIndex] = rowData;
+                    const rowObj = createRowObject(rowIndex, rowData);
+                    if (rowObj) mapGroup.add(rowObj);
+                }
             }
-            addRows();
+            // نضيف صفوفاً موجبة لتغطية بداية اللعبة
+            addRows(0); // نمرر 0 لبدء الإضافة من الصف الأول الموجب
         }
 
-        function addRows() {
-            const newMetadata = generateRows(20);
-            const startIndex = metadata.length;
-            metadata.push(...newMetadata);
-            newMetadata.forEach((rowData, index) => {
-                const rowIndex = startIndex + index + 1;
-                if (rowData.type === "forest") {
-                    const row = Grass(rowIndex);
-                    rowData.trees.forEach(({ tileIndex, height }) => {
-                        const tree = Tree(tileIndex, height);
-                        row.add(tree);
-                    });
-                    mapGroup.add(row);
+        function createRowObject(rowIndex, rowData) {
+            if (rowData.type === "finish" || rowData.isFinish) {
+                return Road(rowIndex);
+            }
+            if (rowData.type === "forest") {
+                const row = Grass(rowIndex);
+                rowData.trees.forEach(({ tileIndex, height }) => {
+                    const tree = Tree(tileIndex, height);
+                    row.add(tree);
+                });
+                return row;
+            }
+            if (rowData.type === "car" || rowData.type === "truck") {
+                const row = Road(rowIndex);
+                rowData.vehicles.forEach((vehicle) => {
+                    const veh = rowData.type === "car" ?
+                        Car(vehicle.initialTileIndex, rowData.direction, vehicle.color) :
+                        Truck(vehicle.initialTileIndex, rowData.direction, vehicle.color);
+                    vehicle.ref = veh;
+                    row.add(veh);
+                });
+                return row;
+            }
+            return null;
+        }
+
+        // إضافة صفوف جديدة ابتداءً من startRow (يجب أن يكون أكبر من أعلى صف موجود)
+        function addRows(startRow) {
+            // نبحث عن أعلى صف موجود حالياً
+            let maxRow = -Infinity;
+            for (let key in metadata) {
+                const r = parseInt(key);
+                if (r > maxRow) maxRow = r;
+            }
+            if (startRow === undefined || startRow === null) startRow = maxRow + 1;
+            // نضيف 20 صفاً
+            for (let i = 0; i < 20; i++) {
+                const rowIndex = startRow + i;
+                if (metadata[rowIndex]) continue; // تجنب التكرار
+                const rowData = generateRow(rowIndex);
+                if (rowData) {
+                    metadata[rowIndex] = rowData;
+                    const rowObj = createRowObject(rowIndex, rowData);
+                    if (rowObj) mapGroup.add(rowObj);
+                } else {
+                    // إذا عاد null (نادراً)، نضع finish كاحتياطي
+                    const fallback = { type: "finish", isFinish: true };
+                    metadata[rowIndex] = fallback;
+                    mapGroup.add(Road(rowIndex));
                 }
-                if (rowData.type === "car" || rowData.type === "truck") {
-                    const row = Road(rowIndex);
-                    rowData.vehicles.forEach((vehicle) => {
-                        const veh = rowData.type === "car" ?
-                            Car(vehicle.initialTileIndex, rowData.direction, vehicle.color) :
-                            Truck(vehicle.initialTileIndex, rowData.direction, vehicle.color);
-                        vehicle.ref = veh;
-                        row.add(veh);
-                    });
-                    mapGroup.add(row);
-                }
-            });
+            }
         }
 
         function initializePlayer() {
@@ -752,6 +698,9 @@
             document.getElementById('result-container').style.visibility = 'hidden';
         }
 
+        // ============================================================
+        // 9. منطق الحركة (مع التحقق من خط النهاية)
+        // ============================================================
         function queueMove(direction) {
             if (!gameActive || gameEnded) return;
             const finalPos = calculateFinalPosition({ rowIndex: playerPos.row, tileIndex: playerPos.tile }, [...moveQueue,
@@ -761,10 +710,17 @@
                 finalPos.tileIndex === minTileIndex - 1 ||
                 finalPos.tileIndex === maxTileIndex + 1
             ) return;
-            const row = metadata[finalPos.rowIndex - 1];
-            if (row && row.type === "forest" &&
-                row.trees.some(t => t.tileIndex === finalPos.tileIndex)
-            ) return;
+
+            // التحقق من وجود عوائق في الصف المستهدف
+            const rowData = metadata[finalPos.rowIndex];
+            if (rowData) {
+                if (rowData.type === "forest" &&
+                    rowData.trees.some(t => t.tileIndex === finalPos.tileIndex)
+                ) return;
+                // لا نسمح بالوقوف على خط النهاية إلا إذا وصلنا إليه (سيتم التحقق لاحقاً)
+                // لكننا نسمح بالدخول إلى خط النهاية
+            }
+
             moveQueue.push(direction);
         }
 
@@ -786,12 +742,17 @@
             if (dir === "left") playerPos.tile -= 1;
             if (dir === "right") playerPos.tile += 1;
 
-            if (playerPos.row > metadata.length - 10) addRows();
+            sounds.stepSound();
+
+            // إضافة صفوف جديدة إذا اقترب اللاعب من نهاية الخريطة
+            const maxRow = Math.max(...Object.keys(metadata).map(Number));
+            if (playerPos.row > maxRow - 5) {
+                addRows(maxRow + 1);
+            }
 
             const scoreEl = document.getElementById('score');
             scoreEl.innerText = playerPos.row.toString();
 
-            // إرسال الحركة للخصم
             if (conn && conn.open) {
                 conn.send({
                     type: 'move',
@@ -801,10 +762,11 @@
                 });
             }
 
-            // التحقق من الفوز (من يصل إلى الهدف أولاً)
-            if (playerPos.row >= WINNING_SCORE && !gameEnded) {
+            // التحقق من الوصول إلى خط النهاية
+            if (playerPos.row >= FINISH_LINE_ROW && !gameEnded) {
                 gameEnded = true;
                 gameActive = false;
+                sounds.winSound();
                 if (conn && conn.open) {
                     conn.send({ type: 'win', score: playerPos.row });
                 }
@@ -848,12 +810,13 @@
         }
 
         // ============================================================
-        // 8. المركبات والتصادم (نحافظ عليها لكن مع تعديل بسيط)
+        // 10. المركبات والتصادم (معدل للاستخدام مع كائن metadata)
         // ============================================================
         function animateVehicles() {
             const delta = clock.getDelta();
-            metadata.forEach(rowData => {
-                if (rowData.type === "car" || rowData.type === "truck") {
+            for (let rowKey in metadata) {
+                const rowData = metadata[rowKey];
+                if ((rowData.type === "car" || rowData.type === "truck") && rowData.vehicles) {
                     const beginning = (minTileIndex - 2) * tileSize;
                     const end = (maxTileIndex + 2) * tileSize;
                     rowData.vehicles.forEach(({ ref }) => {
@@ -867,22 +830,22 @@
                         }
                     });
                 }
-            });
+            }
         }
 
         function hitTest() {
             if (!gameActive) return;
-            const row = metadata[playerPos.row - 1];
-            if (!row) return;
-            if (row.type === "car" || row.type === "truck") {
+            const rowData = metadata[playerPos.row]; // اللاعب موجود في هذا الصف
+            if (!rowData) return;
+            if (rowData.type === "car" || rowData.type === "truck") {
                 const playerBox = new THREE.Box3().setFromObject(player);
-                row.vehicles.forEach(({ ref }) => {
+                rowData.vehicles.forEach(({ ref }) => {
                     if (!ref) return;
                     const vehBox = new THREE.Box3().setFromObject(ref);
                     if (playerBox.intersectsBox(vehBox)) {
                         gameActive = false;
                         gameEnded = true;
-                        // اصطدام = خسارة (الخصم يفوز)
+                        sounds.crashSound();
                         if (conn && conn.open) {
                             conn.send({ type: 'crash' });
                         }
@@ -893,7 +856,7 @@
         }
 
         // ============================================================
-        // 9. شاشة النهاية
+        // 11. شاشة النهاية
         // ============================================================
         const resultContainer = document.getElementById('result-container');
         const resultTitle = document.getElementById('resultTitle');
@@ -902,25 +865,25 @@
         function showEndScreen(isWinner, score) {
             resultContainer.style.visibility = 'visible';
             if (isWinner) {
-                resultTitle.innerText = '🏆 لقد فزت!';
+                resultTitle.innerText = '🏆 لقد وصلت إلى خط النهاية!';
                 resultTitle.style.color = '#2e7d32';
-                resultMsg.innerText = `وصلت إلى ${score} خطوة قبل الخصم!`;
+                resultMsg.innerText = `وصلت إلى الصف ${score} وفزت بالسباق!`;
             } else {
                 resultTitle.innerText = '💔 لقد خسرت!';
                 resultTitle.style.color = '#c62828';
-                resultMsg.innerText = `الخصم وصل إلى ${score} خطوة قبلك.`;
+                if (score >= FINISH_LINE_ROW) {
+                    resultMsg.innerText = `الخصم وصل إلى خط النهاية قبلك.`;
+                } else {
+                    resultMsg.innerText = `اصطدمت بسيارة في الصف ${score}.`;
+                }
             }
         }
 
         // ============================================================
-        // 10. إعداد المشهد
+        // 12. إعداد المشهد
         // ============================================================
         const canvas = document.getElementById('gameCanvas');
-        const renderer = new THREE.WebGLRenderer({
-            canvas,
-            antialias: true,
-            alpha: false,
-        });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
@@ -941,7 +904,7 @@
         initializePlayer();
 
         // ============================================================
-        // 11. الاتصال والصوت
+        // 13. الاتصال والصوت (نفس الكود السابق مع تعديلات طفيفة)
         // ============================================================
         const statusMsg = document.getElementById('statusMsg');
         const roleBadge = document.getElementById('role-badge');
@@ -955,10 +918,7 @@
         let mediaConn = null;
         let isMicActive = false;
 
-        function updateStatus(msg) {
-            statusMsg.textContent = msg;
-        }
-
+        function updateStatus(msg) { statusMsg.textContent = msg; }
         function setRole(text, cls) {
             roleBadge.textContent = text;
             roleBadge.className = cls;
@@ -966,19 +926,15 @@
         }
 
         function createRemotePlayer() {
-            if (remotePlayer) {
-                scene.remove(remotePlayer);
-            }
-            remotePlayer = createPlayerMesh(0xff4444, "الخصم");
+            if (remotePlayer) { scene.remove(remotePlayer); }
+            remotePlayer = createPlayerMesh(0xff4444);
             remotePlayer.position.set(0, 0, 0);
             scene.add(remotePlayer);
         }
 
-        // تشغيل الميكروفون
         async function enableMic() {
             try {
                 if (localStream) {
-                    // كتم / إلغاء كتم
                     const tracks = localStream.getAudioTracks();
                     if (tracks.length > 0) {
                         const enabled = !tracks[0].enabled;
@@ -990,15 +946,12 @@
                         return;
                     }
                 }
-                // طلب إذن الميكروفون لأول مرة
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 localStream = stream;
                 isMicActive = true;
                 micToggleBtn.textContent = '🎤 كتم الصوت';
                 micToggleBtn.className = '';
                 micIndicator.className = 'mic-indicator';
-
-                // إذا كان هناك اتصال مفتوح، نبدأ المكالمة الصوتية
                 if (conn && conn.open && !mediaConn) {
                     startAudioCall();
                 }
@@ -1031,7 +984,6 @@
             });
         }
 
-        // إعداد اتصال البيانات
         function setupConnection(connection) {
             conn = connection;
             conn.on('open', () => {
@@ -1043,11 +995,9 @@
                     setRole('🏁 أنت (الضيف)', 'police');
                 }
                 createRemotePlayer();
-                // بدء الصوت إذا كان الميكروفون مفعلاً
                 if (localStream && !mediaConn) {
                     startAudioCall();
                 }
-                // إرسال الموقع الحالي
                 if (conn.open) {
                     conn.send({
                         type: 'move',
@@ -1074,14 +1024,14 @@
                         createRemotePlayer();
                     }
                 } else if (data.type === 'win') {
-                    // الخصم فاز
                     gameActive = false;
                     gameEnded = true;
+                    sounds.loseSound();
                     showEndScreen(false, data.score);
                 } else if (data.type === 'crash') {
-                    // الخصم اصطدم -> أنت تفوز
                     gameActive = false;
                     gameEnded = true;
+                    sounds.winSound();
                     showEndScreen(true, playerPos.row);
                 } else if (data.type === 'restart') {
                     if (!gameActive) {
@@ -1105,9 +1055,8 @@
         }
 
         // ============================================================
-        // 12. أزرار الواجهة
+        // 14. أزرار الواجهة
         // ============================================================
-        // إنشاء غرفة
         document.getElementById('createRoomBtn').addEventListener('click', () => {
             if (peer) { peer.destroy();
                 peer = null;
@@ -1137,7 +1086,6 @@
             });
         });
 
-        // انضم إلى غرفة
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
             const roomId = document.getElementById('roomInput').value.trim();
             if (!roomId) {
@@ -1165,23 +1113,20 @@
             });
         });
 
-        // زر إخفاء لوحة الاتصال
         document.getElementById('closePanelBtn').addEventListener('click', () => {
             document.getElementById('connection-panel').classList.add('hidden');
             document.getElementById('showPanelBtn').style.display = 'block';
         });
 
-        // زر إظهار لوحة الاتصال
         document.getElementById('showPanelBtn').addEventListener('click', () => {
             document.getElementById('connection-panel').classList.remove('hidden');
             document.getElementById('showPanelBtn').style.display = 'none';
         });
 
-        // زر الميكروفون
         micToggleBtn.addEventListener('click', enableMic);
 
         // ============================================================
-        // 13. التحكم
+        // 15. التحكم وإعادة التشغيل
         // ============================================================
         document.getElementById('forward').addEventListener('click', () => queueMove('forward'));
         document.getElementById('backward').addEventListener('click', () => queueMove('backward'));
@@ -1199,12 +1144,11 @@
             if (key === 'ArrowRight') queueMove('right');
         });
 
-        // إعادة التشغيل
         document.getElementById('retry').addEventListener('click', restartGame);
 
         function restartGame() {
             initializePlayer();
-            initializeMap(); // إعادة تعيين الخريطة للتزامن
+            initializeMap();
             if (remotePlayer) {
                 remotePlayer.position.set(0, 0, 0);
                 remotePlayer.children[0].rotation.z = 0;
@@ -1215,7 +1159,7 @@
         }
 
         // ============================================================
-        // 14. تغيير الحجم
+        // 16. تغيير الحجم
         // ============================================================
         window.addEventListener('resize', () => {
             const w = window.innerWidth;
@@ -1233,7 +1177,7 @@
         });
 
         // ============================================================
-        // 15. حلقة اللعبة
+        // 17. حلقة اللعبة
         // ============================================================
         function animate() {
             requestAnimationFrame(animate);
@@ -1247,14 +1191,11 @@
         animate();
 
         // ============================================================
-        // 16. رسالة البداية
+        // 18. رسالة البداية
         // ============================================================
         updateStatus('🚀 أنشئ غرفة أو انضم');
         setRole('⏳ انتظر', 'waiting');
-        console.log('🏁 سباق الوصول أولاً – جاهز مع صوت!');
-
-        // تصدير للتصحيح
-        window.__game = { player, playerPos, remotePlayer, conn, peer };
+        console.log('🏁 سباق خط النهاية – مع أصوات!');
     </script>
 </body>
 </html>
